@@ -6,4 +6,4 @@ Plnk file with data used in example can be found at http://pontus.popgen.dk/albr
 See markdown here
 https://htmlpreview.github.io/?https://github.com/aalbrechtsen/LDdecay/blob/master/LDdecay.html
 
-https://htmlpreview.github.io/?https://github.com/aalbrechtsen/LDdecay/blob/master/LDdecay-exported
+https://htmlpreview.github.io/?https://github.com/aalbrechtsen/LDdecay/blob/master/LDdecay-exported.html
