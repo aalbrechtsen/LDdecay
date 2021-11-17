@@ -1,9 +1,19 @@
 ---
 title: "LDdecay"
-output:
-  pdf_document: default
-  html_document:
-    df_print: paged
+output: html_document
+# pdf_document: default
+#  html_document:
+#    df_print: paged
+knit: (
+  function(inputFile, encoding) { 
+
+    pSubTitle <- 'LDdecay'
+
+    rmarkdown::render( 
+      input       = inputFile, 
+      encoding    = encoding, 
+      params      = list(sub_title = pSubTitle),
+      output_file = pSubTitle) })
 ---
 
 ```{r setup, include=FALSE}
@@ -52,8 +62,7 @@ function(plinkFile){
 
 ## read plink file
 
-
-
+Plnk file with data used in example can be found at http://pontus.popgen.dk/albrecht/open/admixTjeck/plink/ (you will need the bed, bim and fam file)
 ```{r echo=TRUE}
 plinkFile <- "/home/albrecht/public/open/admixTjeck/plink/admixTjeck2"
 pl <- plink(plinkFile)
@@ -72,11 +81,11 @@ extract genotype for CEU population
 CEUgeno <- pl$geno[popInfo=="CEU",]
 ```
 
-calculate LD and plot mean r2 where distance is number of SNPs
+calculate LD and plot mean r2 where distance is number of SNPs. Where pairwise LD is calculated using a window of 101 SNPs (calculate LD with 50 previous SNPs). For larger windows then change depth (depth number of SNPs used on either side of focal SNP). 
 
 
 ```{r echo=TRUE}
-ceuRes <- LDdecay(CEUgeno,pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01)
+ceuRes <- LDdecay(CEUgeno,pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01,depth=50)
 
 plot(ceuRes$SNPr2,type="l",lwd=3,col="darkred",ylab="mean r2",xlab="distance (Number of SNPs)")
 ```
@@ -91,6 +100,26 @@ ceuBin <- makeBin(ceuRes,max=1,n=100)
 plot(ceuBin$seq,ceuBin$r2bin,type="l",lwd=3,col="darkred",ylab="mean r2",xlab="distance (Mb)")
 ```
 
+See if you depth is high enough for 1Mb regions
+
+
+
+```{r echo=TRUE}
+dist <- ceuRes$r2[,"pos2"] - ceuRes$r2[,"pos1"]
+maxDist <- tapply(dist,ceuRes$r2[,"pos1"],max)
+target<- 1
+maxDist[maxDist>target] <- target
+hist(maxDist,main="Maximal distance between SNP pairs",br=100,col="darkred",xlab="Distance (truncated) in Mb")
+
+```
+We see that out depth is high enough for 1Mb. 
+
+
+
+
+
+
+# Now lets make the plot for multiple pops
 
 lets do the same for the MXL and the YRI
 
