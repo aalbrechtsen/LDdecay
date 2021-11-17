@@ -1,0 +1,109 @@
+---
+title: "LDdecay"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Load R functions
+
+```{r}
+library(Relate)
+library(snpStats)
+source("/home/albrecht/Rfun/LDdecay.R")
+if(FALSE){
+    #to install
+    library(devtools)
+    install_github("aalbrechtsen/relate")
+}
+
+plink<-
+function(plinkFile){
+    pl <- snpStats::read.plink(plinkFile)
+    ind<-pl$fam[,1]
+    snp<-pl$map[,2]
+    geno<-as.integer(as.integer(pl$genotypes)-1)
+    dim(geno)<-c(length(ind),length(snp))
+    geno[geno==-1]<-NA
+    rownames(geno)<-ind
+    colnames(geno)<-colnames(pl)
+    bim<-read.table(paste0(plinkFile,".bim"),as.is=T,header=F)
+    fam<-read.table(paste0(plinkFile,".fam"),as.is=T,header=F)
+    list(geno=geno,bim=bim,fam=fam,pl=pl)
+}
+
+```
+
+## read plink file
+
+
+
+```{r echo=TRUE}
+plinkFile <- "/home/albrecht/public/open/admixTjeck/plink/admixTjeck2"
+pl <- plink(plinkFile)
+
+popInfo <- pl$fam[,2]
+ table(popInfo)
+
+```
+
+extract genotype for CEU population
+
+
+
+```{r echo=TRUE}
+ 
+CEUgeno <- pl$geno[popInfo=="CEU",]
+```
+
+calculate LD and plot mean r2 where distance is number of SNPs
+
+
+```{r echo=TRUE}
+ceuRes <- LDdecay(CEUgeno,pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01)
+
+plot(ceuRes$SNPr2,type="l",lwd=3,col="darkred",ylab="mean r2",xlab="distance (Number of SNPs)")
+```
+
+
+Bin based on physical distance in Mb (not the position was converted to Mb above). Max 1 Mb and 100 bins
+
+
+```{r echo=TRUE}
+
+ceuBin <- makeBin(ceuRes,max=1,n=100)
+plot(ceuBin$seq,ceuBin$r2bin,type="l",lwd=3,col="darkred",ylab="mean r2",xlab="distance (Mb)")
+```
+
+
+lets do the same for the MXL and the YRI
+
+
+```{r echo=TRUE}
+
+mxlRes <- LDdecay(pl$geno[popInfo=="MXL",],pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01)
+mxlBin <- makeBin(mxlRes,max=1,n=100)
+yriRes <- LDdecay(pl$geno[popInfo=="YRI",],pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01)
+yriBin <- makeBin(yriRes,max=1,n=100)
+```
+
+
+Make plot
+
+
+```{r echo=TRUE}
+
+plot(mxlBin$seq,mxlBin$r2bin,type="l",lwd=3,col="darkblue",ylab="mean r2",xlab="distance (Mb)",ylim=c(0,0.1))
+lines(ceuBin$seq,ceuBin$r2bin,lwd=3,col="darkred")
+lines(yriBin$seq,yriBin$r2bin,lwd=3,col="goldenrod")
+legend("topright",fill=c("darkblue","darkred","goldenrod"),c("MXL","CEU","YRI"))
+
+```
+
