@@ -9,6 +9,12 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+M-n e 
+chose exporter markdown
+export to html
+
+for HTML
+C-u M-n e.
 
 ## R Markdown
 
@@ -17,6 +23,7 @@ Load R functions
 ```{r}
 library(Relate)
 library(snpStats)
+## change path to R file from githup 
 source("/home/albrecht/Rfun/LDdecay.R")
 if(FALSE){
     #to install
@@ -40,6 +47,8 @@ function(plinkFile){
 }
 
 ```
+
+
 
 ## read plink file
 
