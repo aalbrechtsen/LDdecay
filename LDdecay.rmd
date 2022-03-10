@@ -34,7 +34,7 @@ Load R functions
 library(Relate)
 library(snpStats)
 ## change path to R file from githup 
-source("/home/albrecht/Rfun/LDdecay.R")
+source("/home/albrecht/github/LDdecay/LDdecay.R")
 if(FALSE){
     #to install
     library(devtools)
@@ -85,9 +85,10 @@ calculate LD and plot mean r2 where distance is number of SNPs. Where pairwise L
 
 
 ```{r echo=TRUE}
+## will only return r2 from same chromosome
 ceuRes <- LDdecay(CEUgeno,pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01,depth=50)
-
-plot(ceuRes$SNPr2,type="l",lwd=3,col="darkred",ylab="mean r2",xlab="distance (Number of SNPs)")
+ylabr2 <- expression(paste("mean r"^"2"))
+plot(ceuRes$SNPr2,type="l",lwd=3,col="darkred",ylab=ylabr2 ,xlab="distance (Number of SNPs)")
 ```
 
 
@@ -97,7 +98,20 @@ Bin based on physical distance in Mb (not the position was converted to Mb above
 ```{r echo=TRUE}
 
 ceuBin <- makeBin(ceuRes,max=1,n=100)
-plot(ceuBin$seq,ceuBin$r2bin,type="l",lwd=3,col="darkred",ylab="mean r2",xlab="distance (Mb)")
+plot(ceuBin$seq,ceuBin$r2bin,type="l",lwd=3,col="darkred",ylab=ylabr2,xlab="distance (Mb)")
+N <- nrow(CEUgeno)
+abline(h=1/(N-1),lty=2)
+
+ceuBin2 <- makeBin(ceuRes,max=2,n=100)
+plot(ceuBin2$seq,ceuBin2$r2bin,type="l",lwd=3,col="darkred",ylab=ylabr2,xlab="distance (Mb)",log="x")
+abline(h=1/(N-1),lty=2)
+
+#make the bins on log scale 
+ceuBin2log <- makeBin(ceuRes,max=2,n=100,log=T)
+plot(ceuBin2log$seq,ceuBin2log$r2bin,type="l",lwd=3,col="darkred",ylab=ylabr2,xlab="distance (Mb)",log="x",main="bins on log scale")
+abline(h=1/(N-1),lty=2)
+
+
 ```
 
 See if you depth is high enough for 1Mb regions
@@ -106,13 +120,18 @@ See if you depth is high enough for 1Mb regions
 
 ```{r echo=TRUE}
 dist <- ceuRes$r2[,"pos2"] - ceuRes$r2[,"pos1"]
+## window size in Mb
 maxDist <- tapply(dist,ceuRes$r2[,"pos1"],max)
 target<- 1
-maxDist[maxDist>target] <- target
-hist(maxDist,main="Maximal distance between SNP pairs",br=100,col="darkred",xlab="Distance (truncated) in Mb")
+#maxDist[maxDist>target] <- target
+hist(ifelse(maxDist>target,target,maxDist),main="Maximal distance between SNP pairs",br=100,col="darkred",xlab="Distance (truncated) in Mb")
+
+
+target<- 4
+hist(ifelse(maxDist>target,target,maxDist),main="Maximal distance between SNP pairs",br=100,col="darkred",xlab="Distance (truncated) in Mb")
 
 ```
-We see that out depth is high enough for 1Mb. 
+We see that out depth is high enough for 1Mb but not optimal for 4 (many windows are shorter than 4 Mb). 
 
 
 
@@ -126,10 +145,13 @@ lets do the same for the MXL and the YRI
 
 ```{r echo=TRUE}
 
-mxlRes <- LDdecay(pl$geno[popInfo=="MXL",],pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01)
-mxlBin <- makeBin(mxlRes,max=1,n=100)
-yriRes <- LDdecay(pl$geno[popInfo=="YRI",],pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01)
-yriBin <- makeBin(yriRes,max=1,n=100)
+mxlRes <- LDdecay(pl$geno[popInfo=="MXL",],pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01,depth=50)
+mxlBin2 <- makeBin(mxlRes,max=2,n=100)
+yriRes <- LDdecay(pl$geno[popInfo=="YRI",],pos=pl$bim[,4]/1e6,chr=pl$bim[,1],maf=0.05,mis=0.01,depth=50)
+yriBin2 <- makeBin(yriRes,max=2,n=100)
+
+Nall <- c(sum(popInfo=="MXL"),sum(popInfo=="CEU"),sum(popInfo=="YRI"))
+
 ```
 
 
@@ -138,10 +160,54 @@ Make plot
 
 ```{r echo=TRUE}
 
-plot(mxlBin$seq,mxlBin$r2bin,type="l",lwd=3,col="darkblue",ylab="mean r2",xlab="distance (Mb)",ylim=c(0,0.1))
-lines(ceuBin$seq,ceuBin$r2bin,lwd=3,col="darkred")
-lines(yriBin$seq,yriBin$r2bin,lwd=3,col="goldenrod")
-legend("topright",fill=c("darkblue","darkred","goldenrod"),c("MXL","CEU","YRI"))
 
+mxlBinLog2 <- makeBin(mxlRes,max=2,n=100)
+yriBin2 <- makeBin(yriRes,max=2,n=100)
+
+
+plot(mxlBin2$seq,mxlBin2$r2bin,type="l",lwd=3,col="darkblue",ylab=ylabr2,xlab="distance (Mb)",ylim=c(0,0.1))
+lines(ceuBin2$seq,ceuBin2$r2bin,lwd=3,col="darkred")
+lines(yriBin2$seq,yriBin2$r2bin,lwd=3,col="goldenrod")
+legend("topright",fill=c("darkblue","darkred","goldenrod"),c("MXL","CEU","YRI"))
+abline(h=1/(Nall-1),lty=2,col=c("darkblue","darkred","goldenrod"))
+
+
+plot(mxlBin2$seq,mxlBin2$r2bin,type="l",lwd=3,col="darkblue",ylab=ylabr2,xlab="distance (Mb)",ylim=c(0,0.1),log="x")
+lines(ceuBin2$seq,ceuBin2$r2bin,lwd=3,col="darkred")
+lines(yriBin2$seq,yriBin2$r2bin,lwd=3,col="goldenrod")
+legend("topright",fill=c("darkblue","darkred","goldenrod"),c("MXL","CEU","YRI"))
+abline(h=1/(Nall-1),lty=2,col=c("darkblue","darkred","goldenrod"))
+```
+From the decay curve we can see that YRI and CEU are not admixed (they converge to 1/(N-1)). There is some missing data and maybe a bit of relatedness or inbreeding which will give a sligt upward bias. The MXL are clearly admixed and will not converge to 1/(N-1). 
+
+
+
+Let add LD between chromosomes
+
+```{r echo=TRUE}
+
+
+
+mxlBetween <- reform(mxlRes$ldResults$rmisc,pl$bim[mxlRes$keepSNP,4]/1e6 , pl$bim[mxlRes$keepSNP,1] ,betw=T)
+mxlBtR2 <- mean(mxlBetween[,"r2"])
+mxlBtR2
+ceuBetween <- reform(ceuRes$ldResults$rmisc,pl$bim[ceuRes$keepSNP,4]/1e6 , pl$bim[ceuRes$keepSNP,1] ,betw=T)
+dim(ceuBetween)
+ceuBtR2 <- mean(ceuBetween[,"r2"])
+ceuBtR2
+
+yriBetween <- reform(yriRes$ldResults$rmisc,pl$bim[yriRes$keepSNP,4]/1e6 , pl$bim[yriRes$keepSNP,1] ,betw=F)
+dim(yriBetween)
+yriBtR2 <- mean(yriBetween[,"r2"])
+yriBtR2
+Nall
+
+
+plot(1/(Nall-1),c(mxlBtR2,ceuBtR2,yriBtR2),lwd=3,col=c("darkblue","darkred","goldenrod"))
+abline(0,1,lty=2)
+
+barplot(c(mxlBtR2,ceuBtR2,yriBtR2),col=c("darkblue","darkred","goldenrod"),beside=T,names=c("MXL","CEU","YRI"),main="Cross chromosome LD",ylab=ylabr2)
+abline(h=1/(Nall-1),lty=2,col=c("darkblue","darkred","goldenrod") )
+legend("topright",lty=2,"Expected LD given sample size")
 ```
 

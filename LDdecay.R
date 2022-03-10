@@ -39,7 +39,7 @@ LDdecay <- function(geno,pos,chr,maf=0.05,mis=0.05,depth=50){
     list(r2=res,ldResults=ld,positions=keepPos,keepSNP=keepSNP,SNPr2=snpR2)
 }
 
-reform<-function(x,pos,chr){
+reform<-function(x,pos,chr,betweenChr=FALSE){
 
     depth <-nrow(x)
     M <- length(pos)
@@ -56,18 +56,25 @@ reform<-function(x,pos,chr){
     res[,4] <- rep(chr[-M],each=depth)
     sameChr <- res[,4] == chr[ord2]
     keep <- sameChr & !is.na(res[,"pos2"])
-    
+    if(betweenChr)
+            keep <- !sameChr & !is.na(res[,"pos2"])
     res[keep,]
 
 }
 
 
-makeBin <- function(x,max=1,n=100){
+
+
+makeBin <- function(x,max=1,n=100,log=FALSE){
 
     res <- x$r2
-    seq <- seq(0,max,by=max/n)
+    if(log)
+        seq <- c(0,exp(seq(log(1/n),log(2),by=(log(2)-log(1/n))/n)))
+    else
+        seq <- seq(0,max,by=max/n)
     bin<-cut(res[,3]-res[,2],seq)
     r2bin<-tapply(res[,1],bin,mean,na.rm=T)
-    list(r2bin=r2bin,seq=seq[-1])
+    midSeq <- seq[-1]-diff(seq)/2
+    list(r2bin=r2bin,seq=midSeq)
 }
-
+ 
